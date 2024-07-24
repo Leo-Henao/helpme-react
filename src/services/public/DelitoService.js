@@ -1,5 +1,17 @@
 import { axiosConfig } from "../../config/axiosConfig";
 
-export const obtenerTodos = () => {
-        return axiosConfig.get("/delitos");
-}
+const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+};
+
+export const obtenerTodos = async () => {
+    const url = "/delitos";
+    try {
+        const response = await axiosConfig.get(url, { headers });
+        return response.data;
+    } catch (error) {
+        console.error('Error al obtener todos los delitos:', error);
+        throw error;
+    }
+};

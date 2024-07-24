@@ -1,4 +1,6 @@
-import React, { useContext, useRef } from 'react';
+import React, { useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { obtenerTodos } from '../../services/public/DelitoService';
+import { getUserById } from '../../services/private/UserProfileService';
 import { AuthContext } from '../../auth/AuthContext';
 import NoAuthorized from '../ui/NoAuthorized';
 import '../../index.css';
@@ -19,12 +21,12 @@ const CrimesTable = ({ data }) => {
                     </tr>
                 </thead>
                 <tbody>
-                    {data.map(({ id, nombre, descripcion, agregadoPor }) => (
+                    {data.map(({ id, nombre, descripcion, agregadoPorNombre }) => (
                         <tr className="table-active" key={id}>
                             <th scope="row">{id}</th>
                             <td>{nombre}</td>
                             <td>{descripcion}</td>
-                            <td>{agregadoPor}</td>
+                            <td>{agregadoPorNombre}</td>
                             <td>
                                 <button className="btn btn-outline-primary" title="Editar">
                                     <i className="fa fa-edit"></i>
@@ -60,11 +62,34 @@ const PrintButton = ({ tableRef }) => {
 export default function Crimes() {
     const { isAdmin } = useContext(AuthContext);
     const tableRef = useRef();
+    const [tableData, setTableData] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const tableData = [
-        { id: 1, nombre: 'Hurto', descripcion: 'cuando se quitan pertenencias', agregadoPor: 'julio' },
-        { id: 2, nombre: 'Acoso Sexual', descripcion: 'Groserías a una persona', agregadoPor: 'julio' }
-    ];
+    useEffect(() => {
+        const fetchDelitos = async () => {
+            try {
+                const delitos = await obtenerTodos();
+                const delitosConNombre = await Promise.all(delitos.map(async (delito) => {
+                    const user = await getUserById(delito.agregadoPor);
+                    return {
+                        ...delito,
+                        agregadoPorNombre: user.nombre // Asegúrate de que esta propiedad existe en la respuesta del usuario
+                    };
+                }));
+                setTableData(delitosConNombre);
+                setLoading(false);
+            } catch (error) {
+                console.error('Error al cargar los delitos:', error);
+                setLoading(false);
+            }
+        };
+
+        fetchDelitos();
+    }, []);
+
+    if (loading) {
+        return <p>Cargando...</p>;
+    }
 
     return (
         <>
